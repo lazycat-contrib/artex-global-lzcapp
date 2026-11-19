@@ -1,0 +1,55 @@
+version: 1
+
+project:
+  root: .
+  build_config: lzc-build.yml
+  package_file: package.yml
+  output: .lazycat-build/artex.lpk
+  target_arch: amd64
+
+update:
+  strategy: publish
+  allow_downgrade: false
+  version_source:
+    type: image
+    image: artex
+
+build:
+  toolchains: []
+  run_buildscript: false
+
+images:
+  # 主服务：artex 全局版（ghcr.io/jiwoochris/artex-global）。上游发 vN.N.N-global.N
+  # SemVer 变体 tag 与 latest 别名；global 版本族映射为严格 SemVer
+  - id: artex
+    target: service
+    service: artex
+    source: ghcr.io/jiwoochris/artex-global
+    channel: custom
+    sort: semver
+    tag_regex: '^v(?P<version>\d+\.\d+\.\d+)-global\.\d+$'
+    version_regex: '^v(?P<version>\d+\.\d+\.\d+)-global\.\d+$'
+    version_template: '{version}'
+    delivery:
+      # 喵喵商店镜像模式：经 ghcr.1ms.run 加速直连上游，要求 digest 与上游一致
+      mode: mirror
+      require_digest_match: true
+  # 内部数据库镜像不做版本跟踪（上游 compose 用固定 postgres:16-alpine）
+  - id: postgres
+    target: service
+    service: postgres
+    source: docker.io/library/postgres
+    channel: stable
+    tag_regex: '^16\.\d+-alpine$'
+    delivery:
+      mode: mirror
+      require_digest_match: true
+
+stores:
+  private:
+    enabled: true
+    skip_if_version_exists: true
+    name: ARTEX
+    summary: "ARTEX（国际版）懒猫微服打包：LLM 多智能体自动化渗透测试平台（Go + Next.js，AGPL-3.0），Web 控制台 + 流量录制代理 + 报告导出。仅限授权环境与防御/检测用途。"
+  official:
+    enabled: false

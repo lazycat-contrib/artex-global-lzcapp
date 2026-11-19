@@ -1,0 +1,154 @@
+application:
+  subdomain: artex
+  multi_instance: false
+  public_path:
+    - /
+  upstreams:
+    - location: /
+      backend: http://artex:8787/
+  # 流量录制代理 8788 走 L4 ingress（agent 运行时经此端口转发流量）
+  ingress:
+    - port: 8788
+      protocol: tcp
+  injects:
+    # 免密登录：登录页 /login，用户名固定 ARTEX（只填密码），密码经部署参数注入 command
+    # 首次初始化（/setup）由 ARTEX_ADMIN_PASSWORD 部署参数直达，无需 setup token
+    - id: login-autofill
+      when:
+        - /login
+        - /login.html
+      do:
+        - src: builtin://simple-inject-password
+          params:
+            password: "{{ .U.admin_password }}"
+            allowPasswordOnly: true
+            passwordSelector: "#password"
+            submitSelector: "button[type=submit]"
+    # 文件选择器拦截（商店强制）：应用有报告/证据导出下载功能
+    - id: open-save-chooser
+      on: browser
+      when:
+        - /*
+      do:
+        - src: file:///lzcapp/pkg/content/lazycat-injects/lzc-file-chooser-inject.js
+          params:
+            fileBridgeRoot: /__lazycat_file_bridge
+    - id: lazycat-file-bridge
+      on: request
+      auth_required: false
+      when:
+        - /__lazycat_file_bridge/*
+      do:
+        src: |
+          const bridgePrefix = "/__lazycat_file_bridge";
+          const requestHost = String(ctx.request.host || "")
+            .split(":")[0]
+            .toLowerCase();
+          const firstDot = requestHost.indexOf(".");
+          const method = String(ctx.request.method || "").toUpperCase();
+
+          if (
+            firstDot <= 0 ||
+            !requestHost.endsWith(".heiyu.space") ||
+            !["GET", "HEAD", "PUT"].includes(method)
+          ) {
+            ctx.response.send(
+              ["GET", "HEAD", "PUT"].includes(method) ? 400 : 405,
+              "Invalid LazyCat file bridge request",
+            );
+            return;
+          }
+
+          const boxDomain = requestHost.slice(firstDot + 1);
+          const fileOrigin = "https://file." + boxDomain;
+          const targetPath =
+            "/files/home" + ctx.request.path.slice(bridgePrefix.length);
+
+          if (method === "PUT") {
+            const body = ctx.body.raw();
+            ctx.proxy.to(fileOrigin + targetPath, {
+              method: "PUT",
+              headers: ctx.headers.clone(),
+              body: body,
+            });
+            return;
+          }
+
+          ctx.proxy.to(fileOrigin + targetPath, {
+            method: method,
+            headers: ctx.headers.clone(),
+          });
+
+services:
+  postgres:
+    # upstream: docker.io/library/postgres:16-alpine
+    image: docker.1ms.run/library/postgres:16-alpine
+    environment:
+      - POSTGRES_USER=artex
+      - POSTGRES_PASSWORD={{ stable_secret "artex_pg_password" }}
+      - POSTGRES_DB=artex
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U artex -d artex
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    binds:
+      - /lzcapp/var/pgdata:/var/lib/postgresql/data
+
+  artex:
+    # upstream: ghcr.io/jiwoochris/artex-global:v0.3.15-global.1
+    # 镜像模式（delivery.mode=mirror）发布到喵喵商店时，Action 校验 digest 一致。
+    image: ghcr.1ms.run/jiwoochris/artex-global:v0.3.15-global.1
+    depends_on:
+      - postgres
+    environment:
+      - ARTEX_PG_DSN=postgres://artex:{{ stable_secret "artex_pg_password" }}@postgres:5432/artex?sslmode=disable
+      # 可选 LLM 配置：留空可在 UI 的 LLM 设置页填（推荐）
+      - ANTHROPIC_API_KEY={{ .U.anthropic_api_key }}
+      - OPENAI_API_KEY={{ .U.openai_api_key }}
+      - ARTEX_LLM_PROVIDER={{ .U.llm_provider }}
+      - ARTEX_LLM_MODEL={{ .U.llm_model }}
+      - ARTEX_LLM_BASE_URL={{ .U.llm_base_url }}
+      # 界面/输出语言：en 默认（global 版），可在设置页切换 ko/zh/es/ja
+      - ARTEX_LANG=en
+      # 首次初始化：直接用部署参数密码初始化管理员（8 位以上），无需 /setup token
+      - ARTEX_ADMIN_PASSWORD={{ .U.admin_password }}
+      # 内嵌 UI 同源，CORS 留空
+      - ARTEX_CORS_ORIGINS=
+    command: "-addr :8787 -proxy :8788"
+    binds:
+      # 数据目录（SQLite + jwt.key）
+      - /lzcapp/var/data:/app/data
+      # skills 目录持久化（容器内 /app/skills 可改，升级镜像不丢）
+      - /lzcapp/var/skills:/app/skills
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "curl -f http://localhost:8787/api/health || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 4g
+
+usage: |
+  ARTEX（国际版）是 LLM 多智能体自动化渗透测试平台（AGPL-3.0 开源）：
+  自主拆解测试目标、调用真实工具、把资产与发现沉淀为双图结构，
+  提供 Web 控制台、流量录制代理与报告导出。
+
+  【仅限授权使用】只对自有系统或已获书面授权的目标测试；
+  未经授权的扫描/探测/利用本身就是违法行为。建议配合 OWASP Juice Shop、
+  DVWA 等本地靶场学习，或用于防御方检测能力建设（见上游 Defense & Detection 指南）。
+
+  【首次使用】
+  1. 安装时设置的"管理员密码"即应用登录密码（用户名固定 ARTEX，自动填充）。
+  2. 在「系统设置 → LLM 设置」配置 LLM（Anthropic/OpenAI 或任意 OpenAI 兼容端点）；
+     也可在安装参数里预填 API Key。建议使用能力较强的模型（如 claude-opus 系列）。
+  3. 建任务即可开始；设置页可切换界面与报告语言（默认英文，可切中文）。
+
+  【说明】
+  - 数据（PostgreSQL + 应用数据）持久化在应用数据目录，升级不丢。
+  - 流量录制代理监听 8788 端口，经盒子 IP:8788 访问。
+  - 上游 https://github.com/jiwoochris/artex-global（AGPL-3.0）

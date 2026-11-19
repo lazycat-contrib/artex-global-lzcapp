@@ -1,0 +1,21 @@
+package: community.lazycat.app.artex
+version: 0.3.15
+name: ARTEX
+description: "LLM multi-agent autonomous penetration-testing platform (global edition). Plans tasks, runs real tools, and accumulates assets and findings into a dual-graph, with a web console, traffic-recording proxy and report export. For authorized, defensive and detection use only — run only against systems you own or are explicitly authorized to test."
+min_os_version: 1.5.0
+homepage: https://github.com/jiwoochris/artex-global
+author: jiwoochris
+license: AGPL-3.0
+permissions:
+  required:
+    - net.internet
+locales:
+  zh:
+    name: "ARTEX"
+    description: "LLM 多智能体自动化渗透测试平台（国际版）。按目标自主拆解任务、调用真实工具、将资产与发现沉淀为双图结构，含 Web 控制台、流量录制代理与报告导出。仅限授权环境与防御/检测用途——只对自有或已获书面授权的系统使用。"
+  zh_CN:
+    name: "ARTEX"
+    description: "LLM 多智能体自动化渗透测试平台（国际版）。按目标自主拆解任务、调用真实工具、将资产与发现沉淀为双图结构，含 Web 控制台、流量录制代理与报告导出。仅限授权环境与防御/检测用途——只对自有或已获书面授权的系统使用。"
+  en:
+    name: "ARTEX"
+    description: "LLM multi-agent autonomous penetration-testing platform (global edition). Plans tasks, runs real tools, and accumulates assets and findings into a dual-graph, with a web console, traffic-recording proxy and report export. For authorized, defensive and detection use only — run only against systems you own or are explicitly authorized to test."

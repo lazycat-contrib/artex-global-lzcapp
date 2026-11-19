@@ -1,0 +1,82 @@
+params:
+  - id: admin_password
+    type: secret
+    name: "Admin Password"
+    description: "Web console admin login password (username is fixed as ARTEX), min 8 characters"
+    default_value: "$random(len=16)"
+    optional: true
+
+  - id: anthropic_api_key
+    type: secret
+    name: "Anthropic API Key"
+    description: "Anthropic API key for the LLM agents (can also be set later in the UI LLM settings)"
+    default_value: ""
+    optional: true
+
+  - id: openai_api_key
+    type: secret
+    name: "OpenAI API Key"
+    description: "OpenAI API key (alternative LLM provider)"
+    default_value: ""
+    optional: true
+
+  - id: llm_provider
+    type: string
+    name: "LLM Provider"
+    description: "Optional: anthropic / openai / openai-compatible provider name"
+    default_value: ""
+    optional: true
+
+  - id: llm_model
+    type: string
+    name: "LLM Model"
+    description: "Optional: model name (e.g. claude-opus-4-8, gpt-4o)"
+    default_value: ""
+    optional: true
+
+  - id: llm_base_url
+    type: string
+    name: "LLM Base URL"
+    description: "Optional: OpenAI-compatible endpoint for domestic or local models"
+    default_value: ""
+    optional: true
+
+locales:
+  zh:
+    admin_password:
+      name: "管理员密码"
+      description: "Web 控制台登录密码（用户名固定 ARTEX），至少 8 位"
+    anthropic_api_key:
+      name: "Anthropic API Key"
+      description: "LLM 智能体使用的 Anthropic Key（也可稍后在界面 LLM 设置里填）"
+    openai_api_key:
+      name: "OpenAI API Key"
+      description: "OpenAI Key（备用 LLM 通道）"
+    llm_provider:
+      name: "LLM 提供商"
+      description: "可选：anthropic / openai / openai-compatible"
+    llm_model:
+      name: "LLM 模型"
+      description: "可选：模型名（如 claude-opus-4-8、gpt-4o）"
+    llm_base_url:
+      name: "LLM 接口地址"
+      description: "可选：OpenAI 兼容端点（国产/本地模型）"
+  en:
+    admin_password:
+      name: "Admin Password"
+      description: "Web console admin login password (username is fixed as ARTEX), min 8 characters"
+    anthropic_api_key:
+      name: "Anthropic API Key"
+      description: "Anthropic API key for the LLM agents (can also be set later in the UI LLM settings)"
+    openai_api_key:
+      name: "OpenAI API Key"
+      description: "OpenAI API key (alternative LLM provider)"
+    llm_provider:
+      name: "LLM Provider"
+      description: "Optional: anthropic / openai / openai-compatible provider name"
+    llm_model:
+      name: "LLM Model"
+      description: "Optional: model name (e.g. claude-opus-4-8, gpt-4o)"
+    llm_base_url:
+      name: "LLM Base URL"
+      description: "Optional: OpenAI-compatible endpoint for domestic or local models"
