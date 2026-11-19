@@ -49,7 +49,7 @@ stores:
   private:
     enabled: true
     skip_if_version_exists: true
-    name: ARTEX
-    summary: "ARTEX（国际版）懒猫微服打包：LLM 多智能体自动化渗透测试平台（Go + Next.js，AGPL-3.0），Web 控制台 + 流量录制代理 + 报告导出。仅限授权环境与防御/检测用途。"
+    name: ARTEX Global
+    summary: "ARTEX Global（国际版）懒猫微服打包：LLM 多智能体自动化渗透测试平台（Go + Next.js，AGPL-3.0），Web 控制台 + 流量录制代理 + 报告导出。仅限授权环境与防御/检测用途。"
   official:
     enabled: false

@@ -24,61 +24,6 @@ application:
             allowPasswordOnly: true
             passwordSelector: "#password"
             submitSelector: "button[type=submit]"
-    # 文件选择器拦截（商店强制）：应用有报告/证据导出下载功能
-    - id: open-save-chooser
-      on: browser
-      when:
-        - /*
-      do:
-        - src: file:///lzcapp/pkg/content/lazycat-injects/lzc-file-chooser-inject.js
-          params:
-            fileBridgeRoot: /__lazycat_file_bridge
-    - id: lazycat-file-bridge
-      on: request
-      auth_required: false
-      when:
-        - /__lazycat_file_bridge/*
-      do:
-        src: |
-          const bridgePrefix = "/__lazycat_file_bridge";
-          const requestHost = String(ctx.request.host || "")
-            .split(":")[0]
-            .toLowerCase();
-          const firstDot = requestHost.indexOf(".");
-          const method = String(ctx.request.method || "").toUpperCase();
-
-          if (
-            firstDot <= 0 ||
-            !requestHost.endsWith(".heiyu.space") ||
-            !["GET", "HEAD", "PUT"].includes(method)
-          ) {
-            ctx.response.send(
-              ["GET", "HEAD", "PUT"].includes(method) ? 400 : 405,
-              "Invalid LazyCat file bridge request",
-            );
-            return;
-          }
-
-          const boxDomain = requestHost.slice(firstDot + 1);
-          const fileOrigin = "https://file." + boxDomain;
-          const targetPath =
-            "/files/home" + ctx.request.path.slice(bridgePrefix.length);
-
-          if (method === "PUT") {
-            const body = ctx.body.raw();
-            ctx.proxy.to(fileOrigin + targetPath, {
-              method: "PUT",
-              headers: ctx.headers.clone(),
-              body: body,
-            });
-            return;
-          }
-
-          ctx.proxy.to(fileOrigin + targetPath, {
-            method: method,
-            headers: ctx.headers.clone(),
-          });
-
 services:
   postgres:
     # upstream: docker.io/library/postgres:16-alpine
